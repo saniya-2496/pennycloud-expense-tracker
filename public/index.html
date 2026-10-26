@@ -1,1 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#635bff" />
+  <title>PennyCloud — Expense Tracker</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#"><span class="brand-mark">₹</span><span>PennyCloud<small>Personal expense tracker</small></span></a>
+      <div class="top-actions">
+        <span id="connectionStatus" class="status"><i></i> Not connected</span>
+        <button id="logoutBtn" class="btn btn-quiet hidden">Log out</button>
+      </div>
+    </header>
 
+    <main>
+      <section id="setupNotice" class="notice hidden">
+        <strong>One-time setup needed</strong>
+        <p>Open <code>app.js</code> and replace the placeholder Firebase configuration with the config from your Firebase web app. Then enable Email/Password Authentication and create a Firestore database. See <code>README.md</code>.</p>
+      </section>
+
+      <section id="authView" class="auth-layout">
+        <div class="hero-copy">
+          <div class="eyebrow">YOUR MONEY, IN ONE PLACE</div>
+          <h1>Make your money<br><span>make more sense.</span></h1>
+          <p>Track daily spending, understand your habits, and keep your expense history available from any device.</p>
+          <div class="hero-points"><span>✓ Cloud-synced records</span><span>✓ Monthly insights</span><span>✓ Private account</span></div>
+        </div>
+        <div class="auth-card">
+          <div class="auth-tabs">
+            <button id="loginTab" class="tab active">Log in</button>
+            <button id="registerTab" class="tab">Create account</button>
+          </div>
+          <h2 id="authTitle">Welcome back</h2>
+          <p class="muted" id="authSubtitle">Log in to see your spending dashboard.</p>
+          <form id="authForm">
+            <label id="nameLabel" class="hidden">Your name<input id="nameInput" type="text" autocomplete="name" placeholder="e.g. San" /></label>
+            <label>Email address<input id="emailInput" type="email" autocomplete="email" required placeholder="you@example.com" /></label>
+            <label>Password<input id="passwordInput" type="password" autocomplete="current-password" required minlength="6" placeholder="At least 6 characters" /></label>
+            <button id="authSubmit" class="btn btn-primary full" type="submit">Log in</button>
+          </form>
+          <p id="authMessage" class="message" role="status"></p>
+          <p class="tiny muted">Demo project only. Do not use a password you use elsewhere.</p>
+        </div>
+      </section>
+
+      <section id="dashboardView" class="hidden">
+        <div class="welcome-row">
+          <div><div class="eyebrow">YOUR OVERVIEW</div><h1>Good to see you<span class="period">.</span></h1><p class="muted">Here’s where your money has been going.</p></div>
+          <div class="month-picker"><label for="monthFilter">Reporting month</label><input id="monthFilter" type="month" /></div>
+        </div>
+
+        <section class="stats-grid">
+          <article class="stat-card total-card"><div class="stat-label">Total this month</div><div id="totalSpent" class="stat-value">₹0.00</div><div class="stat-foot">Based on selected month</div><div class="stat-icon">₹</div></article>
+          <article class="stat-card"><div class="stat-label">Transactions</div><div id="transactionCount" class="stat-value">0</div><div class="stat-foot">In selected month</div><div class="stat-icon lavender">↗</div></article>
+          <article class="stat-card"><div class="stat-label">Largest expense</div><div id="largestExpense" class="stat-value">₹0.00</div><div id="largestExpenseLabel" class="stat-foot">No expenses yet</div><div class="stat-icon peach">⌁</div></article>
+        </section>
+
+        <section class="content-grid">
+          <article class="panel form-panel">
+            <div class="panel-heading"><div><h2 id="formTitle">Add an expense</h2><p class="muted">Small entries make useful insights.</p></div><span class="panel-icon">＋</span></div>
+            <form id="expenseForm">
+              <input type="hidden" id="expenseId" />
+              <label>What did you spend on?<input id="titleInput" maxlength="80" required placeholder="e.g. Lunch, bus pass" /></label>
+              <div class="two-col">
+                <label>Amount (₹)<input id="amountInput" type="number" min="0.01" max="100000000" step="0.01" required placeholder="250.00" /></label>
+                <label>Date<input id="dateInput" type="date" required /></label>
+              </div>
+              <div class="two-col">
+                <label>Category<select id="categoryInput" required>
+                  <option value="Food">🍜 Food</option><option value="Transport">🚌 Transport</option><option value="Education">📚 Education</option><option value="Shopping">🛍️ Shopping</option><option value="Bills">🧾 Bills</option><option value="Health">💊 Health</option><option value="Entertainment">🎬 Entertainment</option><option value="Other">✨ Other</option>
+                </select></label>
+                <label>Payment method<select id="paymentInput"><option>UPI</option><option>Cash</option><option>Debit card</option><option>Credit card</option><option>Net banking</option><option>Other</option></select></label>
+              </div>
+              <label>Note (optional)<textarea id="notesInput" rows="2" maxlength="240" placeholder="Any extra detail…"></textarea></label>
+              <div class="form-actions"><button id="saveExpenseBtn" class="btn btn-primary" type="submit">Save expense</button><button id="cancelEditBtn" class="btn btn-quiet hidden" type="button">Cancel edit</button></div>
+              <p id="expenseMessage" class="message" role="status"></p>
+            </form>
+          </article>
+
+          <article class="panel chart-panel">
+            <div class="panel-heading"><div><h2>Spending breakdown</h2><p class="muted">Category-wise, for selected month.</p></div><span class="panel-icon">◔</span></div>
+            <div class="chart-wrap"><canvas id="categoryChart" aria-label="Category-wise spending chart"></canvas><div id="emptyChart" class="empty-chart">Add your first expense to see the chart.</div></div>
+            <div id="categoryLegend" class="category-legend"></div>
+          </article>
+        </section>
+
+        <section class="panel transactions-panel">
+          <div class="panel-heading transactions-heading"><div><h2>Recent expenses</h2><p class="muted">Your saved transactions for this month.</p></div><div class="filters"><input id="searchInput" type="search" placeholder="Search expenses…" aria-label="Search expenses" /><select id="categoryFilter" aria-label="Filter by category"><option value="All">All categories</option><option>Food</option><option>Transport</option><option>Education</option><option>Shopping</option><option>Bills</option><option>Health</option><option>Entertainment</option><option>Other</option></select><button id="exportBtn" class="btn btn-outline" type="button">Export CSV</button></div></div>
+          <div class="table-wrap"><table><thead><tr><th>Expense</th><th>Category</th><th>Date</th><th>Payment</th><th class="align-right">Amount</th><th>Actions</th></tr></thead><tbody id="expenseRows"></tbody></table><div id="emptyTransactions" class="empty-state">No expenses found for this month. Add one using the form above.</div></div>
+        </section>
+        <footer class="footer-note">PennyCloud · Cloud Computing Mini Project · Your records are stored in your own account.</footer>
+      </section>
+    </main>
+  </div>
+  <div id="toast" class="toast" role="status"></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
